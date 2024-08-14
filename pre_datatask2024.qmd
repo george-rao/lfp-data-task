@@ -70,7 +70,7 @@ women_over_25 <- women |>
 all |>
   summarize(
     .by = c(year, sex),
-    lfp_rate = mean(lfp_lgl, na.rm = TRUE)
+    lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
   ) |>
   ggplot(aes(x = year, y = lfp_rate, color = sex)) +
   geom_line()
@@ -78,7 +78,7 @@ all |>
 women |>
   summarize(
     .by = year,
-    lfp_rate = mean(lfp_lgl, na.rm = TRUE)
+    lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
   ) |>
   ggplot(aes(x = year, y = lfp_rate)) +
   geom_line()
@@ -86,7 +86,7 @@ women |>
 women_over_25 |>
   summarize(
     .by = year,
-    lfp_rate = mean(lfp_lgl, na.rm = TRUE)
+    lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
   ) |>
   ggplot(aes(x = year, y = lfp_rate)) +
   geom_line()
@@ -128,7 +128,7 @@ White women, being the largest group, have a similar rise-and-fall trend as the 
 women_over_25 |>
   summarize(
     .by = c(year, age),
-    lfp_rate = mean(lfp_lgl, na.rm = TRUE)
+    lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
   ) |>
   ggplot(aes(x = year, y = lfp_rate, color = age)) +
   geom_line()
