@@ -15,7 +15,7 @@ editor_options:
 #| warning: false
 library(tidyverse)
 
-raw_data <- read_csv("cps_women_lfp.csv")
+raw_data <- read_csv("data/cps_women_lfp.csv")
 
 # Reorder factors
 data <- raw_data |>
