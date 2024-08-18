@@ -102,7 +102,7 @@ Female labor force participation increased from 1994 to the early 2000s, then ha
 women_over_25 |>
   summarize(
     .by = c(year, race),
-    lfp_rate = mean(lfp_lgl, na.rm = TRUE)
+    lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
   ) |>
   ggplot(aes(x = year, y = lfp_rate, color = race)) +
   geom_line()
@@ -110,16 +110,16 @@ women_over_25 |>
 women_over_25 |>
   summarize(
     .by = c(race),
-    lfp_rate_1994 = mean(if_else(year == 1994, lfp_lgl, NA), na.rm = TRUE),
-    lfp_rate_2024 = mean(if_else(year == 2024, lfp_lgl, NA), na.rm = TRUE),
+    lfp_rate_1994 = weighted.mean(if_else(year == 1994, lfp_lgl, NA), wgt, na.rm = TRUE),
+    lfp_rate_2024 = weighted.mean(if_else(year == 2024, lfp_lgl, NA), wgt, na.rm = TRUE),
     change = lfp_rate_2024 - lfp_rate_1994
   )
 ```
 
 The biggest changes by race were for the following groups:
 
-* White women experienced the biggest fall in LFP, by 3.6%.
-* Hispanic women experienced the biggest rise in LFP, by 5.7%.
+* White women experienced the biggest fall in LFP, by 1.6%.
+* Hispanic women experienced the biggest rise in LFP, by 6.3%.
 
 White women, being the largest group, have a similar rise-and-fall trend as the larger population.
 
@@ -136,8 +136,8 @@ women_over_25 |>
 women_over_25 |>
   summarize(
     .by = age,
-    lfp_rate_1994 = mean(if_else(year == 1994, lfp_lgl, NA), na.rm = TRUE),
-    lfp_rate_2024 = mean(if_else(year == 2024, lfp_lgl, NA), na.rm = TRUE),
+    lfp_rate_1994 = weighted.mean(if_else(year == 1994, lfp_lgl, NA), wgt, na.rm = TRUE),
+    lfp_rate_2024 = weighted.mean(if_else(year == 2024, lfp_lgl, NA), wgt, na.rm = TRUE),
     change = lfp_rate_2024 - lfp_rate_1994
   ) |>
   arrange(age)
@@ -145,15 +145,15 @@ women_over_25 |>
 
 The biggest changes by age were for the following groups:
 
-* Women aged 55-64 experienced the biggest rise in LFP, by 12.1%.
-* Women aged 65-74 also experienced a similarly big rise in LFP, by 11.5%.
+* Women aged 55-64 experienced the biggest rise in LFP, by 12.6%.
+* Women aged 65-74 also experienced a similarly big rise in LFP, by 11%.
 
 ### Examine changes by income
 ```{r}
 women_over_25 |>
   summarize(
     .by = c(year, income_quantiles),
-    lfp_rate = mean(lfp_lgl, na.rm = TRUE)
+    lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
   ) |>
   ggplot(aes(x = year, y = lfp_rate, color = income_quantiles)) +
   geom_line()
@@ -161,15 +161,15 @@ women_over_25 |>
 women_over_25 |>
   summarize(
     .by = c(income_quantiles),
-    lfp_rate_1994 = mean(if_else(year == 1994, lfp_lgl, NA), na.rm = TRUE),
-    lfp_rate_2024 = mean(if_else(year == 2024, lfp_lgl, NA), na.rm = TRUE),
+    lfp_rate_1994 = weighted.mean(if_else(year == 1994, lfp_lgl, NA), wgt, na.rm = TRUE),
+    lfp_rate_2024 = weighted.mean(if_else(year == 2024, lfp_lgl, NA), wgt, na.rm = TRUE),
     # Since the 2024 data is not yet available, compare with the 2023 rate
-    lfp_rate_2023 = mean(if_else(year == 2023, lfp_lgl, NA), na.rm = TRUE),
+    lfp_rate_2023 = weighted.mean(if_else(year == 2023, lfp_lgl, NA), wgt, na.rm = TRUE),
     change = lfp_rate_2023 - lfp_rate_1994
   )
 ```
 
-There is a clear trend: the lower a woman's income, the more her expected LFP drops from 1994 to 2023. The lowest quintile of female earners experienced an 8.5% drop in LFP, compared to the highest quintile, who experienced less than 1% of a drop.
+There is a clear trend: the lower a woman's income, the more her expected LFP drops from 1994 to 2023. The lowest quintile of female earners experienced an 8.3% drop in LFP, compared to the highest quintile, who experienced less than 1.5% of a drop.
 
 ## Question 3
 > Use the data to examine trends among women older than 25 for each of the following factors from 1994 to 2024:
@@ -184,7 +184,7 @@ women_over_25 |>
   filter(income != 0) |>
   summarize(
     .by = year,
-    mean_income = mean(income, na.rm = TRUE)
+    mean_income = weighted.mean(income, wgt, na.rm = TRUE)
   ) |>
   ggplot(aes(x = year, y = mean_income)) +
   geom_line()
@@ -193,7 +193,7 @@ women_over_25 |>
   filter(income != 0) |>
   summarize(
     .by = c(year, race),
-    mean_income = mean(income, na.rm = TRUE)
+    mean_income = weighted.mean(income, wgt, na.rm = TRUE)
   ) |>
   ggplot(aes(x = year, y = mean_income, color = race)) +
   geom_line()
@@ -202,7 +202,7 @@ women_over_25 |>
   filter(income != 0) |>
   summarize(
     .by = c(year, age),
-    mean_income = mean(income, na.rm = TRUE)
+    mean_income = weighted.mean(income, wgt, na.rm = TRUE)
   ) |>
   ggplot(aes(x = year, y = mean_income, color = age)) +
   geom_line()
@@ -216,7 +216,7 @@ women_over_25 |>
   filter(incss != 0) |>
   summarize(
     .by = year,
-    mean_incss = mean(incss)
+    mean_incss = weighted.mean(incss, wgt)
   ) |>
   ggplot(aes(x = year, y = mean_incss)) +
   geom_line()
@@ -225,7 +225,7 @@ women_over_25 |>
   filter(incss != 0) |>
   summarize(
     .by = c(year, race),
-    mean_incss = mean(incss)
+    mean_incss = weighted.mean(incss, wgt)
   ) |>
   filter(!is.na(race)) |>
   ggplot(aes(x = year, y = mean_incss, color = race)) +
@@ -235,7 +235,7 @@ women_over_25 |>
   filter(incss != 0) |>
   summarize(
     .by = c(year, age),
-    mean_incss = mean(incss)
+    mean_incss = weighted.mean(incss, wgt)
   ) |>
   ggplot(aes(x = year, y = mean_incss, color = age)) +
   geom_line()
@@ -248,8 +248,8 @@ Average social insurance income has increased a large amount for women aged 55 t
 women_over_25 |>
   summarize(
     .by = year,
-    mean_income = mean(income, na.rm = TRUE),
-    mean_incss = mean(incss, na.rm = TRUE)
+    mean_income = weighted.mean(income, wgt, na.rm = TRUE),
+    mean_incss = weighted.mean(incss, wgt, na.rm = TRUE)
   ) |>
   pivot_longer(
     cols = c(mean_income, mean_incss),
@@ -268,7 +268,7 @@ Both earned income and social insurance income are increasing over the period (a
 women_over_25 |>
   summarize(
     .by = year,
-    college_rate = mean(college_lgl)
+    college_rate = weighted.mean(college_lgl, wgt)
   ) |>
   ggplot(aes(x = year, y = college_rate)) +
   geom_line()
@@ -276,7 +276,7 @@ women_over_25 |>
 women_over_25 |>
   summarize(
     .by = c(year, race),
-    college_rate = mean(college_lgl)
+    college_rate = weighted.mean(college_lgl, wgt)
   ) |>
   ggplot(aes(x = year, y = college_rate, color = race)) +
   geom_line()
@@ -284,7 +284,7 @@ women_over_25 |>
 women_over_25 |>
   summarize(
     .by = c(year, age),
-    college_rate = mean(college_lgl)
+    college_rate = weighted.mean(college_lgl, wgt)
   ) |>
   ggplot(aes(x = year, y = college_rate, color = age)) +
   geom_line()
@@ -302,7 +302,7 @@ In conclusion for this question, wages, social insurance income, and education a
 women_lfp_rate_chg <- women |>
   summarize(
     .by = year,
-    lfp_rate = mean(lfp_lgl)
+    lfp_rate = weighted.mean(lfp_lgl, wgt)
   ) |>
   mutate(
     lfp_rate_chg = lfp_rate - lag(lfp_rate)
@@ -326,7 +326,7 @@ The year with the steepest increase in female labor force participation relative
 women |>
   summarize(
     .by = c(year, college),
-    lfp_rate = mean(lfp_lgl)
+    lfp_rate = weighted.mean(lfp_lgl, wgt)
   ) |>
   ggplot(aes(x = year, y = lfp_rate, color = college)) +
   geom_line()
@@ -342,8 +342,8 @@ College-educated women experienced a slightly larger drop in LFP since 1994 than
 women |>
   summarize(
     .by = c(year, college),
-    lfp_rate = mean(lfp_lgl),
-    lfp_rate_excl_self = mean(lfp_lgl_excl_self)
+    lfp_rate = weighted.mean(lfp_lgl, wgt),
+    lfp_rate_excl_self = weighted.mean(lfp_lgl_excl_self, wgt)
   ) |>
   pivot_longer(
     cols = c(lfp_rate, lfp_rate_excl_self),
@@ -366,8 +366,8 @@ Using the alternative measure, the pattern of women's LFP evolution by college e
 women |>
   summarize(
     .by = year,
-    lfp_rate = mean(lfp_lgl),
-    lfp_rate_excl_self = mean(lfp_lgl_excl_self)
+    lfp_rate = weighted.mean(lfp_lgl, wgt),
+    lfp_rate_excl_self = weighted.mean(lfp_lgl_excl_self, wgt)
   ) |>
   pivot_longer(
     cols = c(lfp_rate, lfp_rate_excl_self),
@@ -380,8 +380,8 @@ women |>
 women |>
   summarize(
     .by = c(year, age),
-    lfp_rate = mean(lfp_lgl),
-    lfp_rate_excl_self = mean(lfp_lgl_excl_self)
+    lfp_rate = weighted.mean(lfp_lgl, wgt),
+    lfp_rate_excl_self = weighted.mean(lfp_lgl_excl_self, wgt)
   ) |>
   pivot_longer(
     cols = c(lfp_rate, lfp_rate_excl_self),
@@ -394,8 +394,8 @@ women |>
 women |>
   summarize(
     .by = c(year, race),
-    lfp_rate = mean(lfp_lgl),
-    lfp_rate_excl_self = mean(lfp_lgl_excl_self)
+    lfp_rate = weighted.mean(lfp_lgl, wgt),
+    lfp_rate_excl_self = weighted.mean(lfp_lgl_excl_self, wgt)
   ) |>
   pivot_longer(
     cols = c(lfp_rate, lfp_rate_excl_self),
@@ -408,8 +408,8 @@ women |>
 women |>
   summarize(
     .by = c(year, income_quantiles),
-    lfp_rate = mean(lfp_lgl),
-    lfp_rate_excl_self = mean(lfp_lgl_excl_self)
+    lfp_rate = weighted.mean(lfp_lgl, wgt),
+    lfp_rate_excl_self = weighted.mean(lfp_lgl_excl_self, wgt)
   ) |>
   pivot_longer(
     cols = c(lfp_rate, lfp_rate_excl_self),
@@ -463,9 +463,9 @@ summary_women_by_telework <- women |>
   filter(income != 0) |>
   summarize(
     .by = c(year, had_telework),
-    mean_income = mean(income, na.rm = TRUE),
-    employment_rate = mean(employed_lgl, na.rm = TRUE),
-    lfp_rate = mean(lfp_lgl, na.rm = TRUE)
+    mean_income = weighted.mean(income, wgt, na.rm = TRUE),
+    employment_rate = weighted.mean(employed_lgl, wgt, na.rm = TRUE),
+    lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
   ) |>
   mutate(
     had_telework = case_when(
@@ -498,7 +498,7 @@ women_over_25 |>
   filter(year == 2021) |>
   summarize(
     .by = race,
-    teleworking_rate = mean(covid_telework_lgl, na.rm = TRUE)
+    teleworking_rate = weighted.mean(covid_telework_lgl, wgt, na.rm = TRUE)
   ) |>
   mutate(
     race = fct_reorder(race, teleworking_rate)
@@ -510,7 +510,7 @@ women_over_25 |>
   filter(year == 2021) |>
   summarize(
     .by = age,
-    teleworking_rate = mean(covid_telework_lgl, na.rm = TRUE)
+    teleworking_rate = weighted.mean(covid_telework_lgl, wgt, na.rm = TRUE)
   ) |>
   ggplot(aes(x = teleworking_rate, y = age)) +
   geom_point()
@@ -519,7 +519,7 @@ women_over_25 |>
   filter(year == 2021) |>
   summarize(
     .by = education,
-    teleworking_rate = mean(covid_telework_lgl, na.rm = TRUE)
+    teleworking_rate = weighted.mean(covid_telework_lgl, wgt, na.rm = TRUE)
   ) |>
   ggplot(aes(x = teleworking_rate, y = education)) +
   geom_point()
@@ -540,9 +540,9 @@ summary_college_women_by_telework <- women |>
   filter(income != 0, college == "Has college degree") |>
   summarize(
     .by = c(year, had_telework),
-    mean_income = mean(income, na.rm = TRUE),
-    employment_rate = mean(employed_lgl, na.rm = TRUE),
-    lfp_rate = mean(lfp_lgl, na.rm = TRUE)
+    mean_income = weighted.mean(income, wgt, na.rm = TRUE),
+    employment_rate = weighted.mean(employed_lgl, wgt, na.rm = TRUE),
+    lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
   ) |>
   mutate(
     had_telework = case_when(
@@ -555,9 +555,9 @@ summary_college_women <- women |>
   filter(income != 0, college == "Has college degree") |>
   summarize(
     .by = year,
-    mean_income = mean(income, na.rm = TRUE),
-    employment_rate = mean(employed_lgl, na.rm = TRUE),
-    lfp_rate = mean(lfp_lgl, na.rm = TRUE)
+    mean_income = weighted.mean(income, wgt, na.rm = TRUE),
+    employment_rate = weighted.mean(employed_lgl, wgt, na.rm = TRUE),
+    lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
   )
 
 summary_college_women_by_telework |>
