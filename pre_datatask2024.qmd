@@ -14,6 +14,7 @@ editor_options:
 #| message: false
 #| warning: false
 library(tidyverse)
+library(DescTools)
 theme_set(theme_bw())
 
 raw_data <- read_csv("data/cps_women_lfp.csv")
@@ -70,6 +71,9 @@ women <- all |>
 # Create filtered data set of women over 25 only
 women_over_25 <- women |>
   filter(age != "< 25" & !is.na(age))
+
+women_under_25 <- women |>
+  filter(age == "< 25" & !is.na(age))
 ```
 
 ## Question 1
@@ -87,20 +91,15 @@ all |>
   geom_point(alpha = 0.75)
 
 women |>
+  filter(!is.na(age)) |>
+  mutate(
+    over_25 = if_else(age != "< 25", ">= 25", age)
+  ) |>
   summarize(
-    .by = year,
+    .by = c(year, over_25),
     lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
   ) |>
-  ggplot(aes(x = year, y = lfp_rate)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75)
-
-women_over_25 |>
-  summarize(
-    .by = year,
-    lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
-  ) |>
-  ggplot(aes(x = year, y = lfp_rate)) +
+  ggplot(aes(x = year, y = lfp_rate, color = over_25)) +
   geom_line(alpha = 0.75) +
   geom_point(alpha = 0.75)
 ```
@@ -178,101 +177,68 @@ There is a clear trend: the lower a woman's income, the more her expected LFP dr
 (c) Education attainment
 Based on these trends, what factors could be driving the patterns you found in Questions 1 and 2?
 
+### Create function to streamline code
+```{r}
+plot_income_over_time_by_group <- function(data, income_var, group) {
+  data |>
+    filter({{ income_var }} != 0) |>
+    summarize(
+      .by = c(year, {{ group }}),
+      mean_income = weighted.mean({{ income_var }}, wgt, na.rm = TRUE)
+    ) |>
+    filter(!is.na({{ group }})) |>
+    ggplot(aes(x = year, y = mean_income, color = {{ group }})) +
+    geom_line(alpha = 0.75) +
+    geom_point(alpha = 0.75)
+}
+```
+
 ### Examine wage and salary income per woman earning an income
 ```{r}
-women_over_25 |>
-  filter(income != 0) |>
-  summarize(
-    .by = year,
-    mean_income = weighted.mean(income, wgt, na.rm = TRUE)
-  ) |>
-  ggplot(aes(x = year, y = mean_income)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75)
-
-women_over_25 |>
-  filter(income != 0) |>
-  summarize(
-    .by = c(year, race),
-    mean_income = weighted.mean(income, wgt, na.rm = TRUE)
-  ) |>
-  ggplot(aes(x = year, y = mean_income, color = race)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75)
-
-women_over_25 |>
-  filter(income != 0) |>
-  summarize(
-    .by = c(year, age),
-    mean_income = weighted.mean(income, wgt, na.rm = TRUE)
-  ) |>
-  ggplot(aes(x = year, y = mean_income, color = age)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75)
+women_over_25 |> plot_income_over_time_by_group(income)
+women_over_25 |> plot_income_over_time_by_group(income, race)
+women_over_25 |> plot_income_over_time_by_group(income, age)
 ```
 
 Average income has increased across the board. The most relevant observation is that income has increased the most for women aged 65 and older who are earning an income. This is not due to the effect of more elderly women working (those not working have been filtered out), but that the average working elderly woman is earning a higher income. This may be related to the increase in LFP for women over 65, with the logic that higher wages are associated with higher LFP, but it's hard to say that this relationship holds for all groups. For instance, Asian or Pacific Islander women experienced a dramatic increase in average income but had almost no change in LFP since 1994.
 
 ### Examine average social insurance income per woman who was receiving it
 ```{r}
-women_over_25 |>
-  filter(incss != 0) |>
-  summarize(
-    .by = year,
-    mean_incss = weighted.mean(incss, wgt)
-  ) |>
-  ggplot(aes(x = year, y = mean_incss)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75)
-
-women_over_25 |>
-  filter(incss != 0) |>
-  summarize(
-    .by = c(year, race),
-    mean_incss = weighted.mean(incss, wgt)
-  ) |>
-  filter(!is.na(race)) |>
-  ggplot(aes(x = year, y = mean_incss, color = race)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75) +
-  theme(legend.position = "none") +
-  facet_wrap(~race)
-
-women_over_25 |>
-  filter(incss != 0) |>
-  summarize(
-    .by = c(year, age),
-    mean_incss = weighted.mean(incss, wgt)
-  ) |>
-  ggplot(aes(x = year, y = mean_incss, color = age)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75) +
-  theme(legend.position = "none") +
-  facet_wrap(~age)
+women_over_25 |> plot_income_over_time_by_group(incss)
+women_over_25 |> plot_income_over_time_by_group(incss, race)
+women_over_25 |> plot_income_over_time_by_group(incss, age)
 ```
 
 Average social insurance income has increased a large amount for women aged 55 to 64. However, similar to the previous section, it is unclear how this could be related to LFP.
 
-### Examine total average earned income versus social insurance income
+### Examine average income earned of each type
 ```{r}
 women_over_25 |>
-  summarize(
+  mutate(
+    inctot = if_else(inctot == 0, NA, inctot),
+    income = if_else(income == 0, NA, income),
+    incss = if_else(incss == 0, NA, incss),
+  ) |>
+  summarise(
     .by = year,
-    mean_income = weighted.mean(income, wgt, na.rm = TRUE),
-    mean_incss = weighted.mean(incss, wgt, na.rm = TRUE)
+    mean_inctot = weighted.mean(inctot[!is.na(inctot)], wgt[!is.na(inctot)]),
+    mean_income = weighted.mean(income[!is.na(income)], wgt[!is.na(income)]),
+    mean_incss = weighted.mean(incss[!is.na(incss)], wgt[!is.na(incss)]),
+    median_inctot = Quantile(inctot[!is.na(inctot)], wgt[!is.na(inctot)], 0.5),
+    median_income = Quantile(income[!is.na(income)], wgt[!is.na(income)], 0.5),
+    median_incss = Quantile(incss[!is.na(incss)], wgt[!is.na(incss)], 0.5)
   ) |>
   pivot_longer(
-    cols = c(mean_income, mean_incss),
-    names_to = "income_type",
+    cols = mean_inctot:median_incss,
+    names_sep = "_",
+    names_to = c("statistic", "income_type"),
     values_to = "income"
   ) |>
-  filter(year != 2024) |>
-  ggplot(aes(x = year, y = income, color = income_type)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75)
+  ggplot(aes(x = year, y = income, color = income_type, linetype = statistic)) +
+  geom_line(alpha = 0.75)
 ```
 
-Both earned income and social insurance income are increasing over the period (averaged over all women, including those not earning the given kind of income).
+This chart shows the average income earned of each type for individuals actually earning that kind of income (individuals for which the given type of income is zero are excluded). The average and median for all three kinds of income are increasing over time.
 
 ### Examine education attainment
 ```{r}
@@ -390,72 +356,34 @@ Using the alternative measure, the pattern of women's LFP evolution by college e
 ## Question 7
 > How does our labor market analysis change when we use the new measure? Which measure do you prefer? Explain.
 
+### Create function to streamline code
+```{r}
+compare_lfp_rates_by_group <- function(data, group) {
+  data |> summarize(
+    .by = c(year, {{ group }}),
+    lfp_rate = weighted.mean(lfp_lgl, wgt),
+    lfp_rate_excl_self = weighted.mean(lfp_lgl_excl_self, wgt)
+  ) |>
+    pivot_longer(
+      cols = c(lfp_rate, lfp_rate_excl_self),
+      names_to = "lfp_type",
+      values_to = "lfp_rate"
+    ) |>
+    ggplot(aes(x = year, y = lfp_rate, color = {{ group }}, linetype = lfp_type)) +
+    geom_line(alpha = 0.75) +
+    geom_point(alpha = 0.75, size = 1)
+}
+```
+
 ### Examine alternative measure of LFP for different cross sections of the data
 ```{r}
+women |> compare_lfp_rates_by_group()
+women |> compare_lfp_rates_by_group(age)
 women |>
-  summarize(
-    .by = year,
-    lfp_rate = weighted.mean(lfp_lgl, wgt),
-    lfp_rate_excl_self = weighted.mean(lfp_lgl_excl_self, wgt)
-  ) |>
-  pivot_longer(
-    cols = c(lfp_rate, lfp_rate_excl_self),
-    names_to = "lfp_type",
-    values_to = "lfp_rate"
-  ) |>
-  ggplot(aes(x = year, y = lfp_rate, linetype = lfp_type)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75, size = 1)
-
-women |>
-  summarize(
-    .by = c(year, age),
-    lfp_rate = weighted.mean(lfp_lgl, wgt),
-    lfp_rate_excl_self = weighted.mean(lfp_lgl_excl_self, wgt)
-  ) |>
-  pivot_longer(
-    cols = c(lfp_rate, lfp_rate_excl_self),
-    names_to = "lfp_type",
-    values_to = "lfp_rate"
-  ) |>
-  ggplot(aes(x = year, y = lfp_rate, color = age, linetype = lfp_type)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75, size = 1)
-
-women |>
-  summarize(
-    .by = c(year, race),
-    lfp_rate = weighted.mean(lfp_lgl, wgt),
-    lfp_rate_excl_self = weighted.mean(lfp_lgl_excl_self, wgt)
-  ) |>
-  pivot_longer(
-    cols = c(lfp_rate, lfp_rate_excl_self),
-    names_to = "lfp_type",
-    values_to = "lfp_rate"
-  ) |>
-  ggplot(aes(x = year, y = lfp_rate, color = lfp_type, linetype = lfp_type)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75, size = 1) +
-  theme(legend.position = "none") +
-  facet_wrap(~race, ncol = 4)
-
-women |>
-  summarize(
-    .by = c(year, income_quantiles),
-    lfp_rate = weighted.mean(lfp_lgl, wgt),
-    lfp_rate_excl_self = weighted.mean(lfp_lgl_excl_self, wgt)
-  ) |>
-  pivot_longer(
-    cols = c(lfp_rate, lfp_rate_excl_self),
-    names_to = "lfp_type",
-    values_to = "lfp_rate"
-  ) |>
-  ggplot(aes(
-    x = year, y = lfp_rate,
-    color = income_quantiles, linetype = lfp_type
-  )) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75, size = 1)
+  compare_lfp_rates_by_group(race) +
+  facet_wrap(vars(race), ncol = 4) +
+  theme(legend.position = "none")
+women |> compare_lfp_rates_by_group(income_quantiles)
 ```
 
 Without analyzing the effect of changing to the new measure on different cross sections of the data, it is hard to say for certain, but it seems that the effect is simply to lower LFP across the board, albeit in differing magnitudes for different demographics.
