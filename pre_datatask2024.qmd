@@ -2,9 +2,20 @@
 title: "PREDOC Sample Data Task"
 author: "George Rao"
 format:
+  html:
+    toc: true
+    toc-depth: 2
+    fig-width: 6
+    fig-asp: 0.618
+    out-width: "70%"
+    fig-align: left
   pdf:
     toc: true
     toc-depth: 2
+    fig-width: 6
+    fig-asp: 0.618
+    out-width: "70%"
+    fig-align: left
 editor_options:
   chunk_output_type: console
 ---
@@ -15,6 +26,7 @@ editor_options:
 #| warning: false
 library(tidyverse)
 library(DescTools)
+library(gt)
 theme_set(theme_bw())
 
 raw_data <- read_csv("data/cps_women_lfp.csv")
@@ -111,64 +123,93 @@ Female labor force participation increased from 1994 to the early 2000s, then ha
 
 ### Create functions to streamline code
 ```{r}
-plot_lfp_rate_by_group <- function(data, group) {
+plot_mean_by_group_over_time <- function(data, var, group) {
   data |>
     summarize(
       .by = c(year, {{ group }}),
-      lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
+      mean = weighted.mean({{ var }}, wgt, na.rm = TRUE)
     ) |>
-    ggplot(aes(x = year, y = lfp_rate, color = {{ group }})) +
+    ggplot(aes(x = year, y = mean, color = {{ group }})) +
     geom_line(alpha = 0.75) +
-    geom_point(alpha = 0.75)
+    geom_point(alpha = 0.75) +
+    xlab("Year")
 }
 
-chg_by_group <- function(data, group, initial_year, final_year) {
+chg_by_group <- function(data, var, group, initial_year, final_year) {
   data |>
-  arrange({{ group }}) |>
-  summarize(
-    .by = {{ group }},
-    lfpr_initial := weighted.mean(
-      if_else(year == {{ initial_year }}, lfp_lgl, NA), wgt, na.rm = TRUE),
-    lfpr_final := weighted.mean(
-      if_else(year == {{ final_year }}, lfp_lgl, NA), wgt, na.rm = TRUE),
-    "chg_{{initial_year}}_{{final_year}}" :=
-      lfpr_final - lfpr_initial
-  )
+    summarize(
+      .by = {{ group }},
+      initial = weighted.mean(
+        if_else(year == initial_year, {{ var }}, NA), wgt,
+        na.rm = TRUE
+      ),
+      final = weighted.mean(
+        if_else(year == final_year, {{ var }}, NA), wgt,
+        na.rm = TRUE
+      ),
+      chg = final - initial
+    ) |>
+    arrange(desc(chg)) |>
+    gt() |>
+    opt_align_table_header(align = "left") |>
+    cols_align(align = "left", columns = {{ group }}) |>
+    cols_label(
+      initial = initial_year,
+      final = final_year,
+      chg = "Change"
+    ) |>
+    fmt_percent() |>
+    sub_missing(columns = initial:chg, missing_text = "") |>
+    tab_options(table.align = "left")
 }
 ```
 
 ### Examine changes by race
 ```{r}
-women_over_25 |> plot_lfp_rate_by_group(race)
-women_over_25 |> chg_by_group(race, 1994, 2024)
+women_over_25 |>
+  plot_mean_by_group_over_time(lfp_lgl, race) +
+  facet_wrap(vars(race), ncol = 3) +
+  theme(legend.position = "none") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Black women have the highest LFP rate",
+    subtitle = "The rate for white women (the largest group) is the lowest",
+    y = "Labor force participation rate",
+    color = "Race"
+  )
+women_over_25 |>
+  chg_by_group(lfp_lgl, race, 1994, 2024) |>
+  cols_label(1 ~ "Race") |>
+  tab_header(
+    title = "Hispanic women experienced the biggest rise in LFP",
+    subtitle = "White women experienced the biggest fall"
+  )
 ```
-
-The biggest changes by race were for the following groups:
-
-* White women experienced the biggest fall in LFP, by 1.6%.
-* Hispanic women experienced the biggest rise in LFP, by 6.3%.
-
-White women, being the largest group, have a similar rise-and-fall trend as the larger population.
 
 ### Examine changes by age
 ```{r}
-women_over_25 |> plot_lfp_rate_by_group(age)
-women_over_25 |> chg_by_group(age, 1994, 2024)
+women_over_25 |> plot_mean_by_group_over_time(lfp_lgl, age)
+women_over_25 |>
+  chg_by_group(lfp_lgl, age, 1994, 2024) |>
+  cols_label(1 ~ "Age group") |>
+  tab_header(
+    title = "Working into old age has become increasingly common",
+    subtitle = "Women aged 55-74 experienced the biggest rise in LFP"
+  )
 ```
-
-The biggest changes by age were for the following groups:
-
-* Women aged 55-64 experienced the biggest rise in LFP, by 12.6%.
-* Women aged 65-74 also experienced a similarly big rise in LFP, by 11%.
 
 ### Examine changes by income
 ```{r}
-women_over_25 |> plot_lfp_rate_by_group(income_quantiles)
+women_over_25 |> plot_mean_by_group_over_time(lfp_lgl, income_quantiles)
 # Since the 2024 data is not yet available, compare with the 2023 rate
-women_over_25 |> chg_by_group(income_quantiles, 1994, 2023)
+women_over_25 |>
+  chg_by_group(lfp_lgl, income_quantiles, 1994, 2023) |>
+  cols_label(1 ~ "Income quintile") |>
+  tab_header(
+    title = "The lowest earners experienced the biggest drop in LFP",
+    subtitle = "The highest quintile of female earners were relatively unaffected"
+  )
 ```
-
-There is a clear trend: the lower a woman's income, the more her expected LFP drops from 1994 to 2023. The lowest quintile of female earners experienced an 8.3% drop in LFP, compared to the highest quintile, who experienced less than 1.5% of a drop.
 
 ## Question 3
 > Use the data to examine trends among women older than 25 for each of the following factors from 1994 to 2024:
@@ -212,75 +253,86 @@ women_over_25 |> plot_income_over_time_by_group(incss, age)
 Average social insurance income has increased a large amount for women aged 55 to 64. However, similar to the previous section, it is unclear how this could be related to LFP.
 
 ### Examine average income earned of each type
-```{r}
+```{r warning=FALSE}
 women_over_25 |>
   mutate(
-    inctot = if_else(inctot == 0, NA, inctot),
-    income = if_else(income == 0, NA, income),
-    incss = if_else(incss == 0, NA, incss),
+    across(inctot:income, \(x) if_else(x == 0, NA, x))
   ) |>
-  summarise(
+  summarize(
     .by = year,
-    mean_inctot = weighted.mean(inctot[!is.na(inctot)], wgt[!is.na(inctot)]),
-    mean_income = weighted.mean(income[!is.na(income)], wgt[!is.na(income)]),
-    mean_incss = weighted.mean(incss[!is.na(incss)], wgt[!is.na(incss)]),
-    median_inctot = Quantile(inctot[!is.na(inctot)], wgt[!is.na(inctot)], 0.5),
-    median_income = Quantile(income[!is.na(income)], wgt[!is.na(income)], 0.5),
-    median_incss = Quantile(incss[!is.na(incss)], wgt[!is.na(incss)], 0.5)
+    across(inctot:income, list(
+      mean = \(x) weighted.mean(x[!is.na(x)], wgt[!is.na(x)]),
+      median = \(x) Quantile(x[!is.na(x)], wgt[!is.na(x)], 0.5)
+    ))
   ) |>
   pivot_longer(
-    cols = mean_inctot:median_incss,
+    cols = inctot_mean:income_median,
     names_sep = "_",
-    names_to = c("statistic", "income_type"),
-    values_to = "income"
+    names_to = c("income_type", "stat"),
+    values_to = "value"
   ) |>
-  ggplot(aes(x = year, y = income, color = income_type, linetype = statistic)) +
-  geom_line(alpha = 0.75)
+  ggplot(aes(x = year, y = value, color = income_type, linetype = stat)) +
+  geom_line(alpha = 0.75) +
+  geom_point(alpha = 0.75, size = 1)
 ```
 
 This chart shows the average income earned of each type for individuals actually earning that kind of income (individuals for which the given type of income is zero are excluded). The average and median for all three kinds of income are increasing over time.
 
 ### Examine education attainment
 ```{r}
-women_over_25 |>
-  summarize(
-    .by = year,
-    college_rate = weighted.mean(college_lgl, wgt)
-  ) |>
-  ggplot(aes(x = year, y = college_rate)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75)
+plot_props_over_time <- function(data, group) {
+  data |>
+    summarize(
+      .by = c(year, {{ group }}),
+      wgt_count = sum(wgt)
+    ) |>
+    mutate(
+      .by = c(year),
+      prop = wgt_count / sum(wgt_count)
+    ) |>
+    ggplot(aes(x = year, y = prop, color = {{ group }})) +
+    geom_line(alpha = 0.75) +
+    geom_point(alpha = 0.75) +
+    labs(x = "Year", y = "Proportion") +
+    scale_y_continuous(labels = scales::percent)
+}
 
 women_over_25 |>
-  summarize(
-    .by = c(year, education),
-    wgt_count = sum(wgt)
-  ) |>
-  mutate(
-    .by = c(year),
-    prop = wgt_count / sum(wgt_count)
-  ) |>
-  ggplot(aes(x = year, y = prop, color = education)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75)
+  plot_props_over_time(education) +
+  labs(
+    title = "Higher education levels are rising",
+    subtitle = "Having a bachelor's or master's degree is increasingly common",
+    color = "Education level"
+  )
 
 women_over_25 |>
-  summarize(
-    .by = c(year, race),
-    college_rate = weighted.mean(college_lgl, wgt)
-  ) |>
-  ggplot(aes(x = year, y = college_rate, color = race)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75)
+  plot_mean_by_group_over_time(college_lgl) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Higher education increasing among women over 25",
+    subtitle = "Rate of having a college degree has doubled since 1994",
+    y = "Proportion with college degree"
+  )
 
 women_over_25 |>
-  summarize(
-    .by = c(year, age),
-    college_rate = weighted.mean(college_lgl, wgt)
-  ) |>
-  ggplot(aes(x = year, y = college_rate, color = age)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75)
+  plot_mean_by_group_over_time(college_lgl, race) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Increase in higher education is about equal across race",
+    subtitle = "Thus, the racial gap persists over time",
+    y = "Proportion with college degree",
+    color = "Race"
+  )
+
+women_over_25 |>
+  plot_mean_by_group_over_time(college_lgl, age) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "The largest increases in education are in older groups",
+    subtitle = "The rate for people 75+ has nearly tripled since 1994",
+    y = "Proportion with college degree",
+    color = "Age group"
+  )
 ```
 
 The rate of having a college degree is increasing over time for all races and ages. Women aged 75+ seem to have a comparably larger increase in the rate of having a college degree, but the effect seems small.
@@ -359,11 +411,12 @@ Using the alternative measure, the pattern of women's LFP evolution by college e
 ### Create function to streamline code
 ```{r}
 compare_lfp_rates_by_group <- function(data, group) {
-  data |> summarize(
-    .by = c(year, {{ group }}),
-    lfp_rate = weighted.mean(lfp_lgl, wgt),
-    lfp_rate_excl_self = weighted.mean(lfp_lgl_excl_self, wgt)
-  ) |>
+  data |>
+    summarize(
+      .by = c(year, {{ group }}),
+      lfp_rate = weighted.mean(lfp_lgl, wgt),
+      lfp_rate_excl_self = weighted.mean(lfp_lgl_excl_self, wgt)
+    ) |>
     pivot_longer(
       cols = c(lfp_rate, lfp_rate_excl_self),
       names_to = "lfp_type",
