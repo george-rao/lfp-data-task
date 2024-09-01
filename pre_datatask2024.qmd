@@ -3,6 +3,8 @@ title: "PREDOC Sample Data Task"
 author: "George Rao"
 format:
   html:
+    toc: true
+    toc-depth: 2
     fig-width: 6
     fig-asp: 0.618
     out-width: "70%"
