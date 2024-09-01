@@ -87,3 +87,4 @@ cps_women_lfp.csv
 *_files
 *.pdf
 *.html
+!predoc_data_task_2024.pdf
