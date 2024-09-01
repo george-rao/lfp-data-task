@@ -84,3 +84,6 @@ rsconnect/
 
 
 cps_women_lfp.csv
+*_files
+*.pdf
+*.html
