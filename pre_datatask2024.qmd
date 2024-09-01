@@ -83,9 +83,21 @@ women <- all |>
 # Create filtered data set of women over 25 only
 women_over_25 <- women |>
   filter(age != "< 25" & !is.na(age))
+```
 
-women_under_25 <- women |>
-  filter(age == "< 25" & !is.na(age))
+### Create function to streamline code
+```{r}
+plot_mean_by_group_over_time <- function(data, var, group) {
+  data |>
+    summarize(
+      .by = c(year, {{ group }}),
+      mean = weighted.mean({{ var }}, wgt, na.rm = TRUE)
+    ) |>
+    ggplot(aes(x = year, y = mean, color = {{ group }})) +
+    geom_line(alpha = 0.75) +
+    geom_point(alpha = 0.75) +
+    labs(x = "Year")
+}
 ```
 
 ## Question 1
@@ -94,13 +106,28 @@ women_under_25 <- women |>
 ### Chart evolution of LFP over time
 ```{r}
 all |>
-  summarize(
-    .by = c(year, sex),
-    lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
+  plot_mean_by_group_over_time(lfp_lgl, sex) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Female labor force participation hit a peak in 2000",
+    subtitle = "Male LFP has been falling nearly continuously since 2000",
+    y = "Labor force particpation rate",
+    color = "Sex"
+  )
+
+women |>
+  filter(!is.na(age)) |>
+  mutate(
+    over_25 = if_else(age != "< 25", ">= 25", age)
   ) |>
-  ggplot(aes(x = year, y = lfp_rate, color = sex)) +
-  geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75)
+  plot_mean_by_group_over_time(lfp_lgl, over_25) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Younger women have participated less in the labor force since 2000",
+    subtitle = "The trend seems to be reversing in recent years, since COVID in 2020",
+    y = "Labor force particpation rate",
+    color = "Age group"
+  )
 
 women |>
   filter(!is.na(age)) |>
@@ -113,28 +140,15 @@ women |>
   ) |>
   ggplot(aes(x = year, y = lfp_rate, color = over_25)) +
   geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75)
+  geom_point(alpha = 0.75) +
+  labs()
 ```
-
-Female labor force participation increased from 1994 to the early 2000s, then has been falling ever since. At the same time, however, male labor force participation has fallen by even more since the early 2000s.
 
 ## Question 2
 > Among women older than 25, which groups (race, age, income percentile, etc.) of people had the biggest changes in labor force participation since 1994? Please provide at least three graphs and/or tables to support your answer.
 
-### Create functions to streamline code
+### Create function to streamline code
 ```{r}
-plot_mean_by_group_over_time <- function(data, var, group) {
-  data |>
-    summarize(
-      .by = c(year, {{ group }}),
-      mean = weighted.mean({{ var }}, wgt, na.rm = TRUE)
-    ) |>
-    ggplot(aes(x = year, y = mean, color = {{ group }})) +
-    geom_line(alpha = 0.75) +
-    geom_point(alpha = 0.75) +
-    xlab("Year")
-}
-
 chg_by_group <- function(data, var, group, initial_year, final_year) {
   data |>
     summarize(
@@ -188,7 +202,15 @@ women_over_25 |>
 
 ### Examine changes by age
 ```{r}
-women_over_25 |> plot_mean_by_group_over_time(lfp_lgl, age)
+women_over_25 |>
+  plot_mean_by_group_over_time(lfp_lgl, age) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Women aged 25-54 have LFP rates approaching 80%",
+    subtitle = "Labor force participation declines quickly after age 55",
+    y = "Labor force participation rate",
+    color = "Age"
+  )
 women_over_25 |>
   chg_by_group(lfp_lgl, age, 1994, 2024) |>
   cols_label(1 ~ "Age group") |>
@@ -200,7 +222,15 @@ women_over_25 |>
 
 ### Examine changes by income
 ```{r}
-women_over_25 |> plot_mean_by_group_over_time(lfp_lgl, income_quantiles)
+women_over_25 |>
+  plot_mean_by_group_over_time(lfp_lgl, income_quantiles) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Women in the highest income quintiles have the highest LFP rate",
+    subtitle = "The effect may be reciprocal as working also causes higher income",
+    y = "Labor force participation rate",
+    color = "Income quintile"
+  )
 # Since the 2024 data is not yet available, compare with the 2023 rate
 women_over_25 |>
   chg_by_group(lfp_lgl, income_quantiles, 1994, 2023) |>
@@ -208,6 +238,10 @@ women_over_25 |>
   tab_header(
     title = "The lowest earners experienced the biggest drop in LFP",
     subtitle = "The highest quintile of female earners were relatively unaffected"
+  ) |>
+  tab_footnote(
+    footnote = "The 2023 rate is used for comparison as 2024 income data is not yet available.",
+    locations = cells_column_labels(3)
   )
 ```
 
@@ -230,27 +264,72 @@ plot_income_over_time_by_group <- function(data, income_var, group) {
     filter(!is.na({{ group }})) |>
     ggplot(aes(x = year, y = mean_income, color = {{ group }})) +
     geom_line(alpha = 0.75) +
-    geom_point(alpha = 0.75)
+    geom_point(alpha = 0.75) +
+    scale_y_continuous(labels = scales::dollar) +
+    labs(x = "Year")
 }
 ```
 
 ### Examine wage and salary income per woman earning an income
 ```{r}
-women_over_25 |> plot_income_over_time_by_group(income)
-women_over_25 |> plot_income_over_time_by_group(income, race)
-women_over_25 |> plot_income_over_time_by_group(income, age)
+women_over_25 |>
+  plot_income_over_time_by_group(income) +
+  labs(
+    title = "Average earned income for income-earning women has increased",
+    subtitle = "Women earning an income earned about $20,000 more in 2020 than in 1994",
+    y = "Average earned income"
+  )
+
+women_over_25 |>
+  plot_income_over_time_by_group(income, race) +
+  labs(
+    title = "Average earned income has increased across all races",
+    subtitle = "However, White and AAPI women have seen the largest increases",
+    y = "Average earned income",
+    color = "Race"
+  )
+
+women_over_25 |>
+  plot_income_over_time_by_group(income, age) +
+  labs(
+    title = "Increases in income have been level across age groups",
+    subtitle = "The average working elderly woman is earning double what she earned in 1994",
+    y = "Average earned income",
+    color = "Age group"
+  )
 ```
 
 Average income has increased across the board. The most relevant observation is that income has increased the most for women aged 65 and older who are earning an income. This is not due to the effect of more elderly women working (those not working have been filtered out), but that the average working elderly woman is earning a higher income. This may be related to the increase in LFP for women over 65, with the logic that higher wages are associated with higher LFP, but it's hard to say that this relationship holds for all groups. For instance, Asian or Pacific Islander women experienced a dramatic increase in average income but had almost no change in LFP since 1994.
 
 ### Examine average social insurance income per woman who was receiving it
 ```{r}
-women_over_25 |> plot_income_over_time_by_group(incss)
-women_over_25 |> plot_income_over_time_by_group(incss, race)
-women_over_25 |> plot_income_over_time_by_group(incss, age)
-```
+women_over_25 |>
+  plot_income_over_time_by_group(incss) +
+  labs(
+    title = "Average social insurance income (SII) has increased since 1994",
+    subtitle = "SII increased sharply during the Great Recession and in 2020 during COVID"
+  )
 
-Average social insurance income has increased a large amount for women aged 55 to 64. However, similar to the previous section, it is unclear how this could be related to LFP.
+women_over_25 |>
+  plot_income_over_time_by_group(incss, race) +
+  facet_wrap(vars(race), ncol = 3) +
+  theme(legend.position = "none") +
+  labs(
+    title = "White women have received the highest average SII over time",
+    subtitle = "The rise in SII has been approximately similar across races",
+    y = "Average social insurance income",
+  )
+
+women_over_25 |>
+  plot_income_over_time_by_group(incss, age) +
+  facet_wrap(vars(age), ncol = 3) +
+  theme(legend.position = "none") +
+  labs(
+    title = "Average SII has increased sharply for women 55 to 74",
+    subtitle = "It has increased to a lesser extent for other age groups",
+    y = "Average social insurance income"
+  )
+```
 
 ### Examine average income earned of each type
 ```{r warning=FALSE}
@@ -260,10 +339,13 @@ women_over_25 |>
   ) |>
   summarize(
     .by = year,
-    across(inctot:income, list(
-      mean = \(x) weighted.mean(x[!is.na(x)], wgt[!is.na(x)]),
-      median = \(x) Quantile(x[!is.na(x)], wgt[!is.na(x)], 0.5)
-    ))
+    across(
+      .cols = inctot:income,
+      .fns = list(
+        mean = \(x) weighted.mean(x[!is.na(x)], wgt[!is.na(x)]),
+        median = \(x) Quantile(x[!is.na(x)], wgt[!is.na(x)], 0.5)
+      )
+    )
   ) |>
   pivot_longer(
     cols = inctot_mean:income_median,
@@ -272,11 +354,24 @@ women_over_25 |>
     values_to = "value"
   ) |>
   ggplot(aes(x = year, y = value, color = income_type, linetype = stat)) +
+  scale_y_continuous(labels = scales::dollar) +
   geom_line(alpha = 0.75) +
-  geom_point(alpha = 0.75, size = 1)
+  geom_point(alpha = 0.75, size = 1) +
+  theme(axis.title.y = element_blank()) +
+  labs(
+    title = "The typical values for all three kinds of income are increasing",
+    subtitle = "Incomes are skewed upward, and much more so for earned income",
+    x = "Year",
+    color = "Income type",
+    linetype = "Statistic",
+    caption = str_wrap(
+      "Mean and median income received of each type shown for individuals actually receiving that kind of income; individuals for which the given type of income is zero are excluded.",
+      width = 65
+    )
+  ) +
+  scale_color_discrete(labels = c("Earned income", "Social insurance income", "Total income")) +
+  scale_linetype_discrete(labels = c("Mean", "Median"))
 ```
-
-This chart shows the average income earned of each type for individuals actually earning that kind of income (individuals for which the given type of income is zero are excluded). The average and median for all three kinds of income are increasing over time.
 
 ### Examine education attainment
 ```{r}
@@ -351,6 +446,27 @@ women_lfp_rate_chg <- women |>
   ) |>
   mutate(
     lfp_rate_chg = lfp_rate - lag(lfp_rate)
+  ) |>
+  select(!lfp_rate) |>
+  filter(year != 1994) |>
+  arrange(desc(lfp_rate_chg))
+
+bind_rows(
+  slice_head(women_lfp_rate_chg, n = 3),
+  slice_tail(women_lfp_rate_chg, n = 3),
+) |>
+  gt() |>
+  fmt_percent(lfp_rate_chg) |>
+  cols_align(align = "left", columns = year) |>
+  cols_label(
+    year = "Year",
+    lfp_rate_chg = "Change in LFP rate"
+  ) |>
+  opt_align_table_header(align = "left") |>
+  tab_options(table.align = "left") |>
+  tab_header(
+    title = "The year with the steepest increase in female LFP was 2001",
+    subtitle = "This lines up with the September 11 attacks, after which women may have stepped in to fill the labor market gap left by men serving in the subsequent War in Afghanistan"
   )
 
 women_lfp_rate_chg |>
