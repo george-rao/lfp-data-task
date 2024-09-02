@@ -1,5 +1,5 @@
 ---
-title: "PREDOC Sample Data Task"
+title: "Analysis of Labor Force Participation"
 author: "George Rao"
 format:
   html:
@@ -399,6 +399,14 @@ women_over_25 |>
     title = "Higher education levels are rising",
     subtitle = "Having a bachelor's or master's degree is increasingly common",
     color = "Education level"
+  )
+
+women_over_25 |>
+  plot_props_over_time(age) +
+  labs(
+    title = "The population of women is aging",
+    subtitle = "Significant rise in fraction of women 65+",
+    color = "Age group"
   )
 
 women_over_25 |>
