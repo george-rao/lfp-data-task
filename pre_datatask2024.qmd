@@ -3,6 +3,10 @@ title: "Analysis of Labor Force Participation"
 author: "George Rao"
 format:
   html:
+    code-fold: true
+    code-tools:
+      source: true
+      toggle: true
     toc: true
     toc-depth: 2
     fig-width: 6
