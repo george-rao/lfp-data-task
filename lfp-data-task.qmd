@@ -33,7 +33,7 @@ editor_options:
 
 ## Introduction
 
-This page is based on a "data task" I completed for a workshop related to careers in social science research. I am including a link to this page as a coding sample in my applications to pre-doctoral research assistantships.
+This page is a revised version of a "data task" I completed for a workshop related to careers in social science research. I am including a link to this page as a coding sample in my applications to pre-doctoral research assistantships.
 
 - The structure of this page is based on a PDF of instructions (link in the right-hand margin). The instructions are organized into two parts, each with a set of questions about a provided dataset on labor force participation. This page answers each of those questions with supporting charts and tables.
 
@@ -170,7 +170,7 @@ lfp |>
   labs(
     title = "Female labor force participation hit a peak in 2000",
     subtitle = "Male LFP has been falling nearly continuously since 2000",
-    y = "Labor force particpation rate",
+    y = "Labor force participation rate",
     color = "Sex"
   )
 ```
@@ -187,7 +187,7 @@ women |>
   labs(
     title = "Younger women have participated less in the labor force since 2000",
     subtitle = "The trend seems to be reversing in recent years, since COVID in 2020",
-    y = "Labor force particpation rate",
+    y = "Labor force participation rate",
     color = "Age group"
   )
 ```
@@ -362,11 +362,7 @@ women_over_25 |>
 Hispanic women, older women, and women without a high school diploma experienced the biggest rises in LFP while white women, women in the lowest income quintiles, and women with an associate's degree experienced the biggest falls.
 
 ## Question 3
-> Use the data to examine trends among women older than 25 for each of the following factors from 1994 to 2024:
-(a) Wage and salary income
-(b) Social insurance income
-(c) Education attainment
-Based on these trends, what factors could be driving the patterns you found in Questions 1 and 2?
+> Use the data to examine trends among women older than 25 for each of the following factors from 1994 to 2024: wage and salary income, social insurance income, and education attainment. Based on these trends, what factors could be driving the patterns you found in Questions 1 and 2?
 
 Let's examine wage and salary income by group. For this analysis, it makes sense to filter out women who are not earning a wage or salary; otherwise, the total effect will a mix of changes in wages and changes in the proportion of employed women, and we only want to see the changes in wages.
 
@@ -689,7 +685,7 @@ women |>
 College-educated women experienced a slightly larger drop in LFP since 1994 than women without a college education. Furthermore, the drop for college-educated women has been more or less monotonic, with a steady decrease almost every year. The LFP rate for women without a college education, however, initially rose until the early 2000s, after which it experienced a sharper decline.
 
 ## Question 6
-> Create an alternative measure of labor force participation that excludes individuals from the labor force if they are self-employed in their main job (lfp = 0 if self-employed in main job). Using the new measure, describe how labor force participation for college-educated and not college-educated women has evolved since 1994.
+> Create an alternative measure of labor force participation that excludes individuals from the labor force if they are self-employed in their main job. Using the new measure, describe how labor force participation for college-educated and not college-educated women has evolved since 1994.
 
 Let's create the alternative measure and compare it to the standard measure by college education status over time.
 
@@ -947,6 +943,8 @@ women |>
   filter(college == "Has college degree", income != 0) |>
   plot_mean_over_time_by_telework(income) +
   labs(
+    title = "Higher income for female graduates who could telework",
+    subtitle = "Those who could not telework had the same income as those with no response",
     y = "Mean earned income",
     caption = "Note: Income-earning college graduates only.\n* During 2021-2022 due to COVID."
   ) +
@@ -980,3 +978,9 @@ women |>
 :::
 
 Under this simple analysis (not attempting to consider a counterfactual), telework caused positive economic impacts for college-educated women during and after the pandemic. Under the assumption that the complete absence of telework during COVID would have caused all college-educated women to experience the same effects as those college-educated women without telework actually experienced during COVID, we can say that the difference between the blue and red lines in the above charts represents the impacts of telework. Incomes were higher, employment rates were slightly higher, and LFP rates were higher as a result of telework. Of course, this analysis is caveated in the same way as in the answer to Question 1.
+
+# Notes {.appendix}
+
+The dataset used is from the U.S. [Current Population Survey](https://cps.ipums.org/cps){target="_blank"}.
+
+The data task instructions are from [PREDOC](https://predoc.org){target="_blank"}. The version of the instructions reproduced on this page includes minor edits for relevance and presentation.
