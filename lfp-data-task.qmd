@@ -19,6 +19,7 @@ format:
       - text: GitHub Repo
         icon: github
         href: https://github.com/george-rao/lfp-data-task
+        target: _blank
       - text: Quarto File
         icon: file-code
         href: https://github.com/george-rao/lfp-data-task/blob/944a92a85abc724730b8fe4a82e0f4f5dbd98c52/lfp-data-task.qmd
