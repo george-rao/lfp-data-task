@@ -10,7 +10,7 @@ format:
     other-links:
       - text: Data Task Instructions
         icon: file-pdf
-        href: https://github.com/george-rao/lfp-data-task/blob/944a92a85abc724730b8fe4a82e0f4f5dbd98c52/instructions/predoc_data_task_2024.pdf
+        href: https://github.com/george-rao/lfp-data-task/blob/main/instructions/predoc_data_task_2024.pdf
         target: _blank
       - text: Original Source
         href: https://predoc.org/pre-workshop
@@ -22,7 +22,7 @@ format:
         target: _blank
       - text: Quarto File
         icon: file-code
-        href: https://github.com/george-rao/lfp-data-task/blob/944a92a85abc724730b8fe4a82e0f4f5dbd98c52/lfp-data-task.qmd
+        href: https://github.com/george-rao/lfp-data-task/blob/main/lfp-data-task.qmd
         target: _blank
     toc: true
     toc-depth: 2
