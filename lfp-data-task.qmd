@@ -25,6 +25,7 @@ format:
         target: _blank
     toc: true
     toc-depth: 2
+    toc-expand: true
     fig-asp: 0.618
 editor_options:
   chunk_output_type: console
