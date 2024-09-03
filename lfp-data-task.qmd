@@ -1,33 +1,59 @@
 ---
 title: "Analysis of Labor Force Participation"
+subtitle: "Data analysis task and coding sample"
 author: "George Rao"
 format:
   html:
+    embed-resources: true
+    lightbox: true
     code-fold: true
-    code-tools:
-      source: true
-      toggle: true
+    other-links:
+      - text: Data Task Instructions
+        icon: file-pdf
+        href: https://github.com/george-rao/lfp-data-task/blob/944a92a85abc724730b8fe4a82e0f4f5dbd98c52/instructions/predoc_data_task_2024.pdf
+        target: _blank
+      - text: Original Source
+        href: https://predoc.org/pre-workshop
+        target: _blank
+    code-links:
+      - text: GitHub Repo
+        icon: github
+        href: https://github.com/george-rao/lfp-data-task
+      - text: Quarto File
+        icon: file-code
+        href: https://github.com/george-rao/lfp-data-task/blob/944a92a85abc724730b8fe4a82e0f4f5dbd98c52/lfp-data-task.qmd
+        target: _blank
     toc: true
     toc-depth: 2
-    fig-width: 6
     fig-asp: 0.618
-    out-width: "70%"
-    fig-align: left
-  pdf:
-    toc: true
-    toc-depth: 2
-    fig-width: 6
-    fig-asp: 0.618
-    out-width: "70%"
-    fig-align: left
 editor_options:
   chunk_output_type: console
 ---
 
-### Load packages, import data, and clean variables
+## Introduction
+
+This page is based on a "data task" I completed for a workshop related to careers in social science research. I am including a link to this page as a coding sample in my applications to pre-doctoral research assistantships.
+
+- The structure of this page is based on a PDF of instructions (link in the right-hand margin). The instructions are organized into two parts, each with a set of questions about a provided dataset on labor force participation. This page answers each of those questions with supporting charts and tables.
+
+- This entire page is written in R and Markdown using [Quarto](https://quarto.org){target="_blank"}, and the source code is available on GitHub (links in the right-hand margin).
+
+- The source code snippets for the figures on this page are hidden within toggles, which can be expanded and folded up as needed.
+
+- Many of the figures on this page are grouped in tabs for ease of presentation. Click on a tab to switch to a different figure in that group.
+
+# Part 1: Labor Force Participation
+
+## Question 1
+> How has female labor force participation evolved since 1994?
+
+Let's chart labor force participation (LFP) over time by sex to observe how it has evolved for women over time compared to men. Since this set of questions will focus on women older than 25, it's also worth looking at LFP over time split before and after that age milestone.
+
 ```{r}
+#| code-summary: "Load packages, import data, and reorder factors"
 #| message: false
 #| warning: false
+
 library(tidyverse)
 library(scales)
 library(DescTools)
@@ -60,10 +86,9 @@ data <- raw_data |>
   )
 ```
 
-# Part 1: Labor Force Participation
-
-### Create new variables and filter dataset
 ```{r}
+#| code-summary: "Create new variables and filter dataset"
+
 lfp <- data |>
   # Since LFP is the variable of interest, filter out NAs
   filter(!is.na(lfp)) |>
@@ -101,8 +126,9 @@ women_over_25 <- women |>
   filter(age != "< 25" & !is.na(age))
 ```
 
-### Create function to streamline code
 ```{r}
+#| code-summary: "Create functions to streamline code"
+
 plot_mean_by_group_over_time <- function(data, var, group) {
   data |>
     summarize(
@@ -114,12 +140,28 @@ plot_mean_by_group_over_time <- function(data, var, group) {
     geom_point(alpha = 0.75) +
     labs(x = "Year")
 }
+
+plot_props_over_time <- function(data, group) {
+  data |>
+    summarize(
+      .by = c(year, {{ group }}),
+      wgt_count = sum(wgt)
+    ) |>
+    mutate(
+      .by = c(year),
+      prop = wgt_count / sum(wgt_count)
+    ) |>
+    ggplot(aes(x = year, y = prop, color = {{ group }})) +
+    geom_line(alpha = 0.75) +
+    geom_point(alpha = 0.75) +
+    labs(x = "Year", y = "Proportion") +
+    scale_y_continuous(labels = percent)
+}
 ```
 
-## Question 1
-> How has female labor force participation evolved since 1994? Please provide graphs and/or tables to support your answer.
+::: {.panel-tabset}
 
-### Chart evolution of LFP over time
+### Population by sex
 ```{r}
 lfp |>
   plot_mean_by_group_over_time(lfp_lgl, sex) +
@@ -130,7 +172,10 @@ lfp |>
     y = "Labor force particpation rate",
     color = "Sex"
   )
+```
 
+### Women by age group
+```{r}
 women |>
   filter(!is.na(age)) |>
   mutate(
@@ -146,11 +191,31 @@ women |>
   )
 ```
 
-## Question 2
-> Among women older than 25, which groups (race, age, income percentile, etc.) of people had the biggest changes in labor force participation since 1994? Please provide at least three graphs and/or tables to support your answer.
-
-### Create function to streamline code
+### Relative proportions of age groups
 ```{r}
+women_over_25 |>
+  plot_props_over_time(age) +
+  labs(
+    title = "The population of women is aging",
+    subtitle = "Significant rise in fraction of women 65+",
+    color = "Age group"
+  )
+```
+
+:::
+
+Female labor force participation increased from 1994 to the early 2000s, then fell until the early 2020s. Since then, it has risen back to 1994 levels. At the same time, however, male labor force participation has fallen by even more since the early 2000s and has not recovered as much.
+
+Perhaps this is due to the aging of the population as a whole, as can be seen in the chart of age group proportions.
+
+## Question 2
+> Among women older than 25, which groups (race, age, income percentile, etc.) of people had the biggest changes in labor force participation since 1994?
+
+Let's chart LFP over time by each group first to observe general trends.
+
+```{r}
+#| code-summary: "Create function to streamline code"
+
 chg_by_group <- function(data, var, group, initial_year, final_year) {
   data |>
     summarize(
@@ -180,7 +245,9 @@ chg_by_group <- function(data, var, group, initial_year, final_year) {
 }
 ```
 
-### Examine changes by race
+::: {.panel-tabset}
+
+### By race
 ```{r}
 women_over_25 |>
   plot_mean_by_group_over_time(lfp_lgl, race) +
@@ -193,17 +260,9 @@ women_over_25 |>
     y = "Labor force participation rate",
     color = "Race"
   )
-
-women_over_25 |>
-  chg_by_group(lfp_lgl, race, 1994, 2024) |>
-  cols_label(1 ~ "Race") |>
-  tab_header(
-    title = "Hispanic women experienced the biggest rise in LFP",
-    subtitle = "White women experienced the biggest fall"
-  )
 ```
 
-### Examine changes by age
+### By age group
 ```{r}
 women_over_25 |>
   plot_mean_by_group_over_time(lfp_lgl, age) +
@@ -212,19 +271,11 @@ women_over_25 |>
     title = "Women aged 25-54 have LFP rates approaching 80%",
     subtitle = "Labor force participation declines quickly after age 55",
     y = "Labor force participation rate",
-    color = "Age"
-  )
-
-women_over_25 |>
-  chg_by_group(lfp_lgl, age, 1994, 2024) |>
-  cols_label(1 ~ "Age group") |>
-  tab_header(
-    title = "Working into old age has become increasingly common",
-    subtitle = "Women aged 55-74 experienced the biggest rise in LFP"
+    color = "Age group"
   )
 ```
 
-### Examine changes by income
+### By income quintile
 ```{r}
 women_over_25 |>
   plot_mean_by_group_over_time(lfp_lgl, income_quantiles) +
@@ -235,7 +286,51 @@ women_over_25 |>
     y = "Labor force participation rate",
     color = "Income quintile"
   )
+```
 
+### By education level
+```{r}
+women_over_25 |>
+  plot_mean_by_group_over_time(lfp_lgl, education) +
+  scale_y_continuous(labels = percent) +
+  labs(
+    title = "The more educated a woman, the higher her expected LFP rate",
+    subtitle = "The effect is monotonic for nearly all years by increasing education level",
+    y = "Labor force participation rate",
+    color = "Education level"
+  )
+```
+
+:::
+
+Next, let's calculate the specific increases and decreases since 1994 to observe the groups that experienced the largest changes in LFP.
+
+::: {.panel-tabset}
+
+### By race
+```{r}
+women_over_25 |>
+  chg_by_group(lfp_lgl, race, 1994, 2024) |>
+  cols_label(1 ~ "Race") |>
+  tab_header(
+    title = "Hispanic women experienced the biggest rise in LFP",
+    subtitle = "White women experienced the biggest fall"
+  )
+```
+
+### By age group
+```{r}
+women_over_25 |>
+  chg_by_group(lfp_lgl, age, 1994, 2024) |>
+  cols_label(1 ~ "Age group") |>
+  tab_header(
+    title = "Working into old age has become increasingly common",
+    subtitle = "Women aged 55-74 experienced the biggest rise in LFP"
+  )
+```
+
+### By income quintile
+```{r}
 women_over_25 |>
   # Since the 2024 data is not yet available, compare with the 2023 rate
   chg_by_group(lfp_lgl, income_quantiles, 1994, 2023) |>
@@ -250,6 +345,21 @@ women_over_25 |>
   )
 ```
 
+### By education level
+```{r}
+women_over_25 |>
+  chg_by_group(lfp_lgl, education, 1994, 2024) |>
+  cols_label(1 ~ "Education level") |>
+  tab_header(
+    title = "Women without a high school diploma have gained the most",
+    subtitle = "This balks the overall trend"
+  )
+```
+
+:::
+
+Hispanic women, older women, and women without a high school diploma experienced the biggest rises in LFP while white women, women in the lowest income quintiles, and women with an associate's degree experienced the biggest falls.
+
 ## Question 3
 > Use the data to examine trends among women older than 25 for each of the following factors from 1994 to 2024:
 (a) Wage and salary income
@@ -257,8 +367,11 @@ women_over_25 |>
 (c) Education attainment
 Based on these trends, what factors could be driving the patterns you found in Questions 1 and 2?
 
-### Create function to streamline code
+Let's examine wage and salary income by group. For this analysis, it makes sense to filter out women who are not earning a wage or salary; otherwise, the total effect will a mix of changes in wages and changes in the proportion of employed women, and we only want to see the changes in wages.
+
 ```{r}
+#| code-summary: "Create function to streamline code"
+
 plot_income_over_time_by_group <- function(data, income_var, group) {
   data |>
     filter({{ income_var }} != 0) |>
@@ -275,8 +388,12 @@ plot_income_over_time_by_group <- function(data, income_var, group) {
 }
 ```
 
-### Examine wage and salary income per woman earning an income
+::: {.panel-tabset}
+
+### All
 ```{r}
+#| warning: false
+
 women_over_25 |>
   plot_income_over_time_by_group(income) +
   labs(
@@ -284,7 +401,10 @@ women_over_25 |>
     subtitle = "Women earning an income earned about $20,000 more in 2020 than in 1994",
     y = "Average earned income"
   )
+```
 
+### By race
+```{r}
 women_over_25 |>
   plot_income_over_time_by_group(income, race) +
   labs(
@@ -293,7 +413,10 @@ women_over_25 |>
     y = "Average earned income",
     color = "Race"
   )
+```
 
+### By age group
+```{r}
 women_over_25 |>
   plot_income_over_time_by_group(income, age) +
   labs(
@@ -304,17 +427,40 @@ women_over_25 |>
   )
 ```
 
+### By education level
+```{r}
+women_over_25 |>
+  plot_income_over_time_by_group(income, education) +
+  labs(
+    title = "The more education a woman has, the higher her expected income",
+    subtitle = "This trend holds across all years and education levels",
+    y = "Average earned income",
+    color = "Education level"
+  )
+```
+
+:::
+
 Average income has increased across the board. The most relevant observation is that income has increased the most for women aged 65 and older who are earning an income. This is not due to the effect of more elderly women working (those not working have been filtered out), but that the average working elderly woman is earning a higher income. This may be related to the increase in LFP for women over 65, with the logic that higher wages are associated with higher LFP, but it's hard to say that this relationship holds for all groups. For instance, Asian or Pacific Islander women experienced a dramatic increase in average income but had almost no change in LFP since 1994.
 
-### Examine average social insurance income per woman who was receiving it
+Now, let's examine social insurance income. It also makes sense to filter out women not receiving social insurance income from the analysis.
+
+:::{.panel-tabset}
+
+### All
 ```{r}
+#| warning: false
+
 women_over_25 |>
   plot_income_over_time_by_group(incss) +
   labs(
     title = "Average social insurance income (SII) has increased since 1994",
     subtitle = "SII increased sharply during the Great Recession and in 2020 during COVID"
   )
+```
 
+### By race
+```{r}
 women_over_25 |>
   plot_income_over_time_by_group(incss, race) +
   facet_wrap(vars(race), ncol = 3) +
@@ -324,7 +470,10 @@ women_over_25 |>
     subtitle = "The rise in SII has been approximately similar across races",
     y = "Average social insurance income",
   )
+```
 
+### By age group
+```{r}
 women_over_25 |>
   plot_income_over_time_by_group(incss, age) +
   facet_wrap(vars(age), ncol = 3) +
@@ -336,8 +485,27 @@ women_over_25 |>
   )
 ```
 
-### Examine average income earned of each type
-```{r warning=FALSE}
+### By education level
+```{r}
+women_over_25 |>
+  plot_income_over_time_by_group(incss, education) +
+  labs(
+    title = "Social income increases with education",
+    subtitle = "The effect is large, around $1,000 for each level of education",
+    y = "Average social insurance income",
+    color = "Education level"
+  )
+```
+
+:::
+
+The results are largely the same as for earned income, except for education, where there is perhaps an unexpected explanation: since unemployment benefits are often based on recent earnings, highly educated women receive more on average.
+
+Before moving on to education attainment, let's compare the two kinds of income we just analyzed:
+
+```{r}
+#| warning: false
+
 women_over_25 |>
   mutate(
     across(inctot:income, \(x) if_else(x == 0, NA, x))
@@ -378,25 +546,11 @@ women_over_25 |>
   scale_linetype_discrete(labels = c("Mean", "Median"))
 ```
 
-### Examine education attainment
-```{r}
-plot_props_over_time <- function(data, group) {
-  data |>
-    summarize(
-      .by = c(year, {{ group }}),
-      wgt_count = sum(wgt)
-    ) |>
-    mutate(
-      .by = c(year),
-      prop = wgt_count / sum(wgt_count)
-    ) |>
-    ggplot(aes(x = year, y = prop, color = {{ group }})) +
-    geom_line(alpha = 0.75) +
-    geom_point(alpha = 0.75) +
-    labs(x = "Year", y = "Proportion") +
-    scale_y_continuous(labels = percent)
-}
+The means are always higher than the medians, showing that the data are skewed upward (there are a few women earning a lot more than the median). Average total income is lower than earned income because it averages across all women receiving income, including those receiving social insurance income in lieu of earned income.
 
+Before diving into education attainment by group over time, let's look at how education levels have evolved over time as a whole.
+
+```{r}
 women_over_25 |>
   plot_props_over_time(education) +
   labs(
@@ -404,15 +558,16 @@ women_over_25 |>
     subtitle = "Having a bachelor's or master's degree is increasingly common",
     color = "Education level"
   )
+```
 
-women_over_25 |>
-  plot_props_over_time(age) +
-  labs(
-    title = "The population of women is aging",
-    subtitle = "Significant rise in fraction of women 65+",
-    color = "Age group"
-  )
+It's not surprising to see that education levels are rising; the proportion of women with only a high school diploma has been falling almost monotonically since 1994.
 
+Now, let's examine education attainment by group.
+
+:::{.panel-tabset}
+
+### All
+```{r}
 women_over_25 |>
   plot_mean_by_group_over_time(college_lgl) +
   scale_y_continuous(labels = percent) +
@@ -421,7 +576,10 @@ women_over_25 |>
     subtitle = "Rate of having a college degree has doubled since 1994",
     y = "Proportion with college degree"
   )
+```
 
+### By race
+```{r}
 women_over_25 |>
   plot_mean_by_group_over_time(college_lgl, race) +
   scale_y_continuous(labels = percent) +
@@ -431,7 +589,10 @@ women_over_25 |>
     y = "Proportion with college degree",
     color = "Race"
   )
+```
 
+### By age group
+```{r}
 women_over_25 |>
   plot_mean_by_group_over_time(college_lgl, age) +
   scale_y_continuous(labels = percent) +
@@ -443,14 +604,20 @@ women_over_25 |>
   )
 ```
 
+:::
+
 The rate of having a college degree is increasing over time for all races and ages. Women aged 75+ seem to have a comparably larger increase in the rate of having a college degree, but the effect seems small.
 
 In conclusion for this question, wages, social insurance income, and education attainment are all increasing for most groups of women during the period since 1994. It is unclear, however, how this might be driving the overall trend in women's LFP. It does seem like there may be a connection between higher wages and education attainment for older women and their relatively large increase in LFP.
 
 ## Question 4
-> Between 1994 and 2024, which year had the steepest increase in female labor force participation relative to the previous year? What factors do you think are driving this pattern? Support your answers by using the data, referencing major events that happened around this time period, and/or citing previous studies.
+> Between 1994 and 2024, which year had the steepest increase in female labor force participation relative to the previous year? What factors do you think are driving this pattern?
 
-### Calculate year-over-year changes in female LFP
+Let's chart the year-over-year changes in female LFP and observe which bar is the highest. Let's also create a table that shows the three years with the largest increases in LFP and the three years with the largest decreases in LFP.
+
+::: {.panel-tabset}
+
+### Chart
 ```{r}
 women_lfp_rate_chg <- women |>
   summarize(
@@ -464,6 +631,20 @@ women_lfp_rate_chg <- women |>
   filter(year != 1994) |>
   arrange(desc(lfp_rate_chg))
 
+women_lfp_rate_chg |>
+  ggplot(aes(x = year, y = lfp_rate_chg)) +
+  geom_col() +
+  labs(
+    title = "Large changes in LFP seem to line up with economic cycles",
+    subtitle = "The recessions in 2000, in 2008, and during COVID all seem to appear here",
+    y = "Change in LFP rate",
+    x = "Year"
+  ) +
+  scale_y_continuous(labels = percent)
+```
+
+### Table
+```{r}
 bind_rows(
   slice_head(women_lfp_rate_chg, n = 3),
   slice_tail(women_lfp_rate_chg, n = 3),
@@ -481,22 +662,17 @@ bind_rows(
     title = "The year with the steepest increase in female LFP was 1997",
     subtitle = "This may line up with the peak of the economic boom of the 1990s, which was followed by the 2000s recession; the largest decline in 2021 also roughly lines up with COVID"
   )
-
-women_lfp_rate_chg |>
-  ggplot(aes(x = year, y = lfp_rate_chg)) +
-  geom_col() +
-  labs(
-    title = "Large changes in LFP seem to line up with economic cycles",
-    subtitle = "The recessions in 2000, in 2008, and during COVID all seem to appear here",
-    y = "Change in LFP rate",
-    x = "Year"
-  )
 ```
 
-## Question 5
-> How has labor force participation for college-educated and not college-educated women evolved since 1994? Please provide graphs and/or tables to support your answer.
+:::
 
-### Examine LFP by college education status
+Both the chart and the table confirm that 1997 was the year with the largest increase. This probably lines up with boom/bust cycles, with 1997 being the boom leading up to the recession of the early 2000s.
+
+## Question 5
+> How has labor force participation for college-educated and not college-educated women evolved since 1994?
+
+Let's chart it.
+
 ```{r}
 women |>
   plot_mean_by_group_over_time(lfp_lgl, college) +
@@ -512,10 +688,13 @@ women |>
 College-educated women experienced a slightly larger drop in LFP since 1994 than women without a college education. Furthermore, the drop for college-educated women has been more or less monotonic, with a steady decrease almost every year. The LFP rate for women without a college education, however, initially rose until the early 2000s, after which it experienced a sharper decline.
 
 ## Question 6
-> Create an alternative measure of labor force participation that excludes individuals from the labor force if they are self-employed in their main job (lfp = 0 if self-employed in main job). Using the new measure, describe how labor force participation for college-educated and not college-educated women has evolved since 1994. Please provide graphs and/or tables to support your answer.
+> Create an alternative measure of labor force participation that excludes individuals from the labor force if they are self-employed in their main job (lfp = 0 if self-employed in main job). Using the new measure, describe how labor force participation for college-educated and not college-educated women has evolved since 1994.
 
-### Create function to streamline code
+Let's create the alternative measure and compare it to the standard measure by college education status over time.
+
 ```{r}
+#| code-summary: "Create function to streamline code"
+
 compare_lfp_rates_by_group <- function(data, group) {
   data |>
     summarize(
@@ -541,7 +720,6 @@ compare_lfp_rates_by_group <- function(data, group) {
 }
 ```
 
-### Examine alternative measure of LFP by college education status
 ```{r}
 women |>
   compare_lfp_rates_by_group(college) +
@@ -557,23 +735,45 @@ The effect of changing to the alternative measure is larger for women with a col
 ## Question 7
 > How does our labor market analysis change when we use the new measure? Which measure do you prefer? Explain.
 
-### Examine alternative measure of LFP for different cross sections of the data
+Let's examine the new measure versus the old measure over time for some different cross sections of the data.
+
+::: {.panel-tabset}
+
+### All
 ```{r}
 women |> compare_lfp_rates_by_group()
+```
 
-women |>
-  compare_lfp_rates_by_group(age) +
-  labs(color = "Age group")
-
+### By race
+```{r}
 women |>
   compare_lfp_rates_by_group(race) +
   facet_wrap(vars(race), ncol = 3) +
   labs(color = "Race")
+```
 
+### By age group
+```{r}
+women |>
+  compare_lfp_rates_by_group(age) +
+  labs(color = "Age group")
+```
+
+### By income quintile
+```{r}
 women |>
   compare_lfp_rates_by_group(income_quantiles) +
   labs(color = "Income quintile")
 ```
+
+### By education level
+```{r}
+women |>
+  compare_lfp_rates_by_group(education) +
+  labs(color = "Education level")
+```
+
+:::
 
 Without analyzing the effect of changing to the new measure on different cross sections of the data, it is hard to say for certain, but it seems that the effect is simply to lower LFP across the board, albeit in differing magnitudes for different demographics.
 
@@ -585,15 +785,18 @@ However, there could be applications of LFP for which it makes sense to filter o
 
 The most important concept here is that `had_telework` was created while the data was grouped by `cpsidp`. This means that any individual who had telework during COVID is categorized as having had telework for all years. The point is to be able to follow the same individuals (who had telework during COVID) and observe their outcomes post-COVID; the years before COVID can be disregarded into missing values later.
 
-There is a flaw in this logic: since the data are presumably grouped, and each row is likely not an individual observation (as evidenced by the `wgt` variable), this "cohort" analysis will not be perfectly accurate as we may be following cohorts of groups, rather than cohorts of individuals. This problem will be ignored here for the sake of this exercise only.
+There is a flaw in this logic: since the data are presumably grouped, and each row is likely not an individual observation (as evidenced by the `wgt` variable), this "cohort" analysis will not be perfectly accurate as we may be following cohorts of groups, rather than cohorts of individuals. Since this is an inherent characteristic of the provided data, this problem will be ignored here for the sake of this exercise only.
 
 ## Question 1
-> Since the rise of telework in 2020, how have wages, employment, and labor force participation changed for women who had telework from 2020-2024 and women who did not? Please provide at least three graphs and/or tables to support your answer.
+> Since the rise of telework in 2020, how have wages, employment, and labor force participation changed for women who had telework from 2020-2024 and women who did not?
 
 It is unclear how telework during 2020 or after year-end 2022 would be inferred from the rest of the variables, so this question will be answered by comparing women who had telework during 2021-2022 due to COVID and women who did not have telework during 2021-2022 due to COVID (using the `covid_telework` field).
 
-### Examine labor market outcomes by teleworking status during COVID
+Let's examine labor market outcomes by teleworking status during COVID.
+
 ```{r}
+#| code-summary: "Create function to streamline code"
+
 plot_mean_over_time_by_telework <- function(data, var) {
   data |>
     summarize(
@@ -614,7 +817,12 @@ plot_mean_over_time_by_telework <- function(data, var) {
     scale_color_discrete(labels = c("No", "Yes", "NA")) +
     coord_cartesian(xlim = c(2016, 2024))
 }
+```
 
+::: {.panel-tabset}
+
+### Earned income
+```{r}
 women |>
   filter(income != 0) |>
   plot_mean_over_time_by_telework(income) +
@@ -625,14 +833,20 @@ women |>
     caption = "Note: Income-earners only.\n* During 2021-2022 due to COVID."
   ) +
   scale_y_continuous(labels = dollar)
+```
 
+### Employment
+```{r}
 women |>
   plot_mean_over_time_by_telework(employed_lgl) +
   labs(
     y = "Employment rate"
   ) +
   scale_y_continuous(labels = percent)
+```
 
+### Labor force participation
+```{r}
 women |>
   plot_mean_over_time_by_telework(lfp_lgl) +
   labs(
@@ -641,15 +855,20 @@ women |>
   scale_y_continuous(labels = percent)
 ```
 
+:::
+
 Women who were able to telework during COVID had markedly better incomes than women who were not able to telework, with the effect even expanding into 2023 after the pandemic had mostly ended.
 
 The effects on employment and labor force participation are unclear because all respondents where `covid_telework` was not NA were both employed and in the labor force in that year. In other words, all respondents categorized as "Yes" or "No" in the above charts were both employed and in the labor force when the answer was recorded. When the group/mutate calculations are made by ID, it becomes clear that some women who teleworked in 2021 did not in 2022, and vice versa, causing employment and LFP to be less than 100% in the charts. At face value, it seems that having telework is related to higher employment and labor force participation, but due to the way the data were collected, this conclusion is likely flawed.
 
 ## Question 2
-> For which groups of women older than 25 was telework due to the pandemic most common in 2021? Based on these patterns, what can you infer about the relationship between economic well-being and the ability to telework between 2021? Please provide at least three graphs and/or tables to support your answer.
+> For which groups of women older than 25 was telework due to the pandemic most common in 2021? Based on these patterns, what can you infer about the relationship between economic well-being and the ability to telework between 2021?
 
-### Examine 2021 teleworking rates for women older than 25 by demographic factors
+Let's examine 2021 teleworking rates for women older than 25 by demographic factors.
+
 ```{r}
+#| code-summary: "Create function to streamline code"
+
 plot_mean_by_group_in_year <- function(data, var, group, in_year, sort = FALSE) {
   data <- data |>
     filter(year == in_year) |>
@@ -667,7 +886,12 @@ plot_mean_by_group_in_year <- function(data, var, group, in_year, sort = FALSE) 
     ggplot(aes(x = mean, y = group)) +
     geom_point()
 }
+```
 
+::: {.panel-tabset}
+
+### By race
+```{r}
 women_over_25 |>
   plot_mean_by_group_in_year(covid_tw_lgl, race, 2021, TRUE) +
   labs(
@@ -677,7 +901,10 @@ women_over_25 |>
     x = "Teleworking rate in 2021"
   ) +
   scale_x_continuous(labels = percent)
+```
 
+### By age group
+```{r}
 women_over_25 |>
   plot_mean_by_group_in_year(covid_tw_lgl, age, 2021) +
   labs(
@@ -687,7 +914,10 @@ women_over_25 |>
     x = "Teleworking rate in 2021"
   ) +
   scale_x_continuous(labels = percent)
+```
 
+### By education level
+```{r}
 women_over_25 |>
   plot_mean_by_group_in_year(covid_tw_lgl, education, 2021) +
   labs(
@@ -699,30 +929,19 @@ women_over_25 |>
   scale_x_continuous(labels = percent)
 ```
 
+:::
+
 Although a direct observation of the relationship between income and teleworking rate is unavailable in the data, the aforementioned demographic factors are highly correlated with income. It can therefore be inferred that women with higher incomes were much more likely to be able to telework in 2021.
 
 ## Question 3
-> Predict what trends in wages, employment, and labor force participation for college-educated women from 2020 to 2024 would have looked like if telework was not an option. What does this tell you about the economic impacts of telework during the COVID-19 pandemic? Please support your answer with graphs and/or tables.
->
-> Hint: Look at trends from previous years that had similar economic contexts. Also, feel free to explore the variables you haven’t used yet.
+> Predict what trends in wages, employment, and labor force participation for college-educated women from 2020 to 2024 would have looked like if telework was not an option. What does this tell you about the economic impacts of telework during the COVID-19 pandemic?
 
-### Examine labor market outcomes for college-educated women by teleworking status during COVID
+Let's examine labor market outcomes for college-educated women by teleworking status during COVID.
+
+::: {.panel-tabset}
+
+### Earned income
 ```{r}
-summary_college_women_by_telework <- women |>
-  filter(income != 0, college == "Has college degree") |>
-  summarize(
-    .by = c(year, had_telework),
-    mean_income = weighted.mean(income, wgt, na.rm = TRUE),
-    employment_rate = weighted.mean(employed_lgl, wgt, na.rm = TRUE),
-    lfp_rate = weighted.mean(lfp_lgl, wgt, na.rm = TRUE)
-  ) |>
-  mutate(
-    had_telework = case_when(
-      year <= 2019 ~ NA,
-      year >= 2020 ~ !is.na(had_telework)
-    )
-  )
-
 women |>
   filter(college == "Has college degree", income != 0) |>
   plot_mean_over_time_by_telework(income) +
@@ -731,7 +950,10 @@ women |>
     caption = "Note: Income-earning college graduates only.\n* During 2021-2022 due to COVID."
   ) +
   scale_y_continuous(labels = dollar)
+```
 
+### Employment
+```{r}
 women |>
   filter(college == "Has college degree") |>
   plot_mean_over_time_by_telework(employed_lgl) +
@@ -740,7 +962,10 @@ women |>
     caption = "Note: College graduates only.\n* During 2021-2022 due to COVID."
   ) +
   scale_y_continuous(labels = percent)
+```
 
+### Labor force participation
+```{r}
 women |>
   filter(college == "Has college degree") |>
   plot_mean_over_time_by_telework(lfp_lgl) +
@@ -750,5 +975,7 @@ women |>
   ) +
   scale_y_continuous(labels = percent)
 ```
+
+:::
 
 Under this simple analysis (not attempting to consider a counterfactual), telework caused positive economic impacts for college-educated women during and after the pandemic. Under the assumption that the complete absence of telework during COVID would have caused all college-educated women to experience the same effects as those college-educated women without telework actually experienced during COVID, we can say that the difference between the blue and red lines in the above charts represents the impacts of telework. Incomes were higher, employment rates were slightly higher, and LFP rates were higher as a result of telework. Of course, this analysis is caveated in the same way as in the answer to Question 1.
