@@ -28,9 +28,16 @@ format:
     toc-depth: 2
     toc-expand: true
     fig-asp: 0.618
+    callout-appearance: simple
 editor_options:
   chunk_output_type: console
 ---
+
+::: {.callout-note}
+## What's New
+
+An interactive charting tool for the data underlying this page is now available [here](https://c44x2q-george-rao.shinyapps.io/shiny-app).
+:::
 
 ## Introduction
 
