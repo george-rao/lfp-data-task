@@ -8,11 +8,8 @@ theme_set(theme_bw(
   base_size = 14
 ))
 
-# Import data
-raw_data <- read_csv("data/cps_women_lfp.csv")
-
-# Reorder factors
-data <- raw_data |>
+# Import data and reorder factors
+women_over_25_by_year <- read_csv("data/women-over-25-by-year.csv") |>
   mutate_if(is_character, as_factor) |>
   mutate(
     education = fct_relevel(
@@ -24,52 +21,19 @@ data <- raw_data |>
       age, "< 25", "25-34", "35-44", "45-54",
       "55-64", "65-74", "75+"
     ),
-    wageinc_quantiles = fct_relevel(
-      wageinc_quantiles, "0-19.99", "20-39.99",
-      "40-59.99", "60-79.99", "80-100"
-    ),
     income_quantiles = fct_relevel(
       income_quantiles, "0-19.99", "20-39.99",
       "40-59.99", "60-79.99", "80-100"
     )
   )
 
-# Create new variables and filter dataset
-lfp <- data |>
-  # Since LFP is the variable of interest, filter out NAs
-  filter(!is.na(lfp)) |>
-  # Create new variables
-  mutate(
-    lfp_lgl = lfp == "In labor force",
-    college_lgl = college == "Has college degree",
-    # This logical is true if we know the individual is self-employed,
-    # but false otherwise, including if there is a missing value
-    self_employed_lgl = if_else(self_employed == "Self-employed",
-      TRUE, FALSE, FALSE
-    ),
-    lfp_lgl_excl_self = !self_employed_lgl & lfp_lgl,
-    employed_lgl = employed == "Employed",
-    lfp_lgl = lfp == "In labor force",
-    covid_tw_lgl = covid_telework == "Telework from 2021-2022 due to COVID",
-    inctot = if_else(inctot == 0, NA, inctot),
-    income = if_else(income == 0, NA, income),
-    incss = if_else(incss == 0, NA, incss)
-  )
-
-# Create filtered data set of women only
-women <- lfp |>
-  filter(sex == "Female")
-
-# Create filtered data set of women over 25 only
-women_over_25 <- women |>
-  filter(age != "< 25" & !is.na(age))
-
 # Create function to streamline code
 plot_mean_by_group_over_time <- function(data, var, group) {
   data |>
+    filter(!is.na(!!sym(group))) |>
     summarize(
       .by = c(year, {{ group }}),
-      mean = weighted.mean(!!sym(var), wgt, na.rm = TRUE)
+      mean = weighted.mean(!!sym(var), !!sym(str_c(var, "_wgt")), na.rm = TRUE)
     ) |>
     ggplot(aes_string(x = "year", y = "mean", color = {{ group }})) +
     geom_line(alpha = 0.75, linewidth = 0.75) +
@@ -96,7 +60,7 @@ variables <- c(
 dollar_vars <- c("inctot", "income", "incss")
 
 ui <- page_sidebar(
-  title = "Selected data from the U.S. Current Population Survey",
+  title = "Data on women over 25 from the U.S. CPS",
   sidebar = sidebar(
     selectInput(
       inputId = "var",
@@ -107,27 +71,42 @@ ui <- page_sidebar(
       inputId = "group",
       label = "Variable to group by",
       choices = groups
-    )
+    ),
+    radioButtons(
+      inputId = "facet_lgl",
+      label = "Type of chart",
+      choices = c(
+        "Combined" = FALSE,
+        "Faceted" = TRUE
+      )
+    ),
   ),
   plotOutput(outputId = "lfp_chart")
 )
 
 server <- function(input, output) {
   chart <- reactive({
-    chart <- women_over_25 |>
+    chart <- women_over_25_by_year |>
       plot_mean_by_group_over_time(input$var, input$group) +
       labs(
         y = names(which(variables == input$var)),
         color = names(which(groups == input$group))
       )
-    if(input$var %in% dollar_vars) {
+    if (input$var %in% dollar_vars) {
       chart <- chart + scale_y_continuous(labels = dollar)
     } else {
       chart <- chart + scale_y_continuous(labels = percent)
     }
+    if (input$facet_lgl) {
+      chart <- chart +
+        facet_wrap(vars(!!sym(input$group)), ncol = 3) +
+        theme(legend.position = "none")
+    }
     chart
   })
-  output$lfp_chart <- renderPlot({chart()})
+  output$lfp_chart <- renderPlot({
+    chart()
+  })
 }
 
 shinyApp(ui = ui, server = server)
