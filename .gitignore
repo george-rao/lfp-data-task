@@ -84,6 +84,7 @@ rsconnect/
 
 
 cps_women_lfp.csv
+women-over-25-by-year.csv
 *_files
 *.pdf
 *.html
