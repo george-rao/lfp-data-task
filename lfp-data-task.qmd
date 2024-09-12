@@ -36,7 +36,7 @@ editor_options:
 ::: {.callout-note}
 ## What's New
 
-An interactive charting tool for the data underlying this page is now available [here](https://c44x2q-george-rao.shinyapps.io/shiny-app).
+An interactive charting tool for the data underlying this page is now available [here](https://c44x2q-george-rao.shinyapps.io/shiny-app){target="_blank"}.
 :::
 
 ## Introduction
