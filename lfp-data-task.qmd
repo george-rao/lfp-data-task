@@ -28,7 +28,6 @@ format:
     toc-depth: 2
     toc-expand: true
     fig-asp: 0.618
-    callout-appearance: simple
 editor_options:
   chunk_output_type: console
 ---
@@ -460,7 +459,8 @@ women_over_25 |>
   plot_income_over_time_by_group(incss) +
   labs(
     title = "Average social insurance income (SII) has increased since 1994",
-    subtitle = "SII increased sharply during the Great Recession and in 2020 during COVID"
+    subtitle = "SII increased sharply during the Great Recession and in 2020 during COVID",
+    y = "Average social insurance income",
   )
 ```
 
